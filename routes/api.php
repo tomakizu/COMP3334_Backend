@@ -18,6 +18,17 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+/** requires client credential validation, must use post under the group */
+Route::middleware(['validate_client'])->group(function () {
+    Route::post('/user/create', 'UserController@create');
+    Route::post('/user/login',  'UserController@login');
+});
+
+/** requires access token validation, must use post under the group */
+Route::middleware(['verify_user'])->group(function () {
+    
+});
+
 Route::get('/test/200', 'TestingController@test200');
 Route::get('/test/404', 'TestingController@test404');
 Route::get('/test/500', 'TestingController@test500');
