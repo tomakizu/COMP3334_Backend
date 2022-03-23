@@ -17,3 +17,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::get('/test/200', 'TestingController@test200');
+Route::get('/test/404', 'TestingController@test404');
+Route::get('/test/500', 'TestingController@test500');
+
+Route::get('/artwork', 'ArtworkController@list');
+Route::get('/user', 'UserController@list');
