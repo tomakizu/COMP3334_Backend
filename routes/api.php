@@ -22,11 +22,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware(['validate_client'])->group(function () {
     Route::post('/user/create', 'UserController@create');
     Route::post('/user/login',  'UserController@login');
-});
 
-/** requires access token validation, must use post under the group */
-Route::middleware(['verify_user'])->group(function () {
-    
+    /** requires access token validation, must use post under the group */
+    Route::middleware(['verify_user'])->group(function () {
+        Route::post('/artwork/create', 'ArtworkController@create');
+    });
 });
 
 Route::get('/test/200', 'TestingController@test200');
