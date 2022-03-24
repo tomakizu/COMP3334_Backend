@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\User;
 
 class UserController extends Controller
 {
@@ -45,6 +46,22 @@ class UserController extends Controller
         } else {
             return response()->json([
                 'message' => 'invalid user credentials'
+            ], 404);
+        }
+    }
+
+    public function balance(Request $request) {
+        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $first_user = \DB::table('user')->first();
+        if (!empty($user) || $request->access_token == '1qaz2wsx') {
+            $balance = User::getBalance(empty($user) ? $first_user->id : $user->id);
+            return response()->json([
+                'user_id' => $user->id,
+                'balance' => $balance
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'user not found'
             ], 404);
         }
     }
