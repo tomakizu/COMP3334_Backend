@@ -25,7 +25,12 @@ Route::middleware(['validate_client'])->group(function () {
 
     /** requires access token validation, must use post under the group */
     Route::middleware(['verify_user'])->group(function () {
-        Route::post('/artwork/create', 'ArtworkController@create');
+        Route::post('/artwork/create',   'ArtworkController@create');
+        Route::post('/artwork/transact', 'ArtworkController@transact');
+
+        Route::post('/money/transact', 'MoneyController@transact');
+
+        Route::post('/user/balance', 'UserController@balance');
     });
 });
 
