@@ -56,7 +56,7 @@ class UserController extends Controller
         if (!empty($user) || $request->access_token == '1qaz2wsx') {
             $balance = User::getBalance(empty($user) ? $first_user->id : $user->id);
             return response()->json([
-                'user_id' => $user->id,
+                'user_id' => empty($user) ? $first_user->id : $user->id,
                 'balance' => $balance
             ], 200);
         } else {
