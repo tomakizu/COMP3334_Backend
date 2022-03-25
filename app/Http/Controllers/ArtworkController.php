@@ -53,7 +53,7 @@ class ArtworkController extends Controller
                     $seller_money_transaction = \DB::table('money_transaction')->insertGetId(
                         array(
                             'user_id'                => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
-                            'artwork_transaction_id' => $artwork->id,
+                            'artwork_transaction_id' => $artwork_transaction,
                             'value'                  => $request->value
                         )
                     );
@@ -61,7 +61,7 @@ class ArtworkController extends Controller
                     $buyer_money_transaction = \DB::table('money_transaction')->insertGetId(
                         array(
                             'user_id'                => empty($user) ? $first_user->id : $user->id,
-                            'artwork_transaction_id' => $artwork->id,
+                            'artwork_transaction_id' => $artwork_transaction,
                             'value'                  => $request->value * -1
                         )
                     );
