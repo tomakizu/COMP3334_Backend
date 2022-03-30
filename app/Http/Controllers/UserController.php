@@ -15,10 +15,12 @@ class UserController extends Controller
     public function create(Request $request) {
         $user = \DB::table('user')->where('username', $request->username)->get();
         if (count($user) == 0) {
+            $salt = rand(100000000, 999999999); // 9 digits
             $new_user = \DB::table('user')->insertGetId(
                 array(
-                    'username' => $request->username,
-                    'password' => $request->password
+                    'username'   => $request->username,
+                    'password'   => hash('sha512', $request->password . $salt),
+                    'salt_value' => $salt
                 )
             );
             return response()->json([
@@ -33,16 +35,24 @@ class UserController extends Controller
     }
 
     public function login(Request $request) {
-        $user = \DB::table('user')->where('username', $request->username)->where('password', $request->password)->first();
+        $user = \DB::table('user')->where('username', $request->username)->first();
         if (!empty($user)) {
-            $access_token = hash('sha512', $request->username . date('YmdHis'));
-            $affected_rows = \DB::table('user')->where('id', $user->id)->update(['access_token' => $access_token]);
-            if ($affected_rows == 1) {
+            $salted_password = hash('sha512', $request->password . $user->salt_value);
+            if ($salted_password == $user->password) {
+                $access_token = hash('sha512', $request->username . date('YmdHis'));
+                $affected_rows = \DB::table('user')->where('id', $user->id)->update(['access_token' => $access_token]);
+                if ($affected_rows == 1) {
+                    return response()->json([
+                        'message' => 'Success',
+                        'access_token' => $access_token
+                    ], 200);    
+                }
+            } else {
                 return response()->json([
-                    'message' => 'Success',
-                    'access_token' => $access_token
-                ], 200);    
+                    'message' => 'invalid user credentials'
+                ], 404);    
             }
+
         } else {
             return response()->json([
                 'message' => 'invalid user credentials'
