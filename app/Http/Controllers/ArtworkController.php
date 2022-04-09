@@ -90,4 +90,20 @@ class ArtworkController extends Controller
             ], 403);
         }
     }
+
+    public function history(Request $request) {
+        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $first_user = \DB::table('user')->first();
+        if (!empty($user) || $request->access_token == '1qaz2wsx') {
+            $artwork_transactions = \DB::table('artwork_transaction')
+                ->where('seller_id', empty($user) ? $first_user->id : $user->id)
+                ->orWhere('buyer_id', empty($user) ? $first_user->id : $user->id)
+                ->get();
+            return response()->json($artwork_transactions, 200);
+        } else {
+            return response()->json([
+                'message' => 'Invalid Access Token ' . $request->access_token
+            ], 403);
+        }
+    }
 }

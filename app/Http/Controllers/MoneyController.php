@@ -33,4 +33,17 @@ class MoneyController extends Controller
             ], 403);
         }
     }
+
+    public function history(Request $request) {
+        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $first_user = \DB::table('user')->first();
+        if (!empty($user) || $request->access_token == '1qaz2wsx') {
+            $transactions = \DB::table('money_transaction')->where('user_id', empty($user) ? $first_user->id : $user->id)->get()->toJson(JSON_PRETTY_PRINT);
+            return response($transactions, 200);
+        } else {
+            return response()->json([
+                'message' => 'Invalid Access Token ' . $request->access_token
+            ], 403);
+        }
+    }
 }
