@@ -35,6 +35,7 @@ Route::middleware(['XSS'])->group(function () {
             Route::post('/money/transact', 'MoneyController@transact');
 
             Route::post('/user/balance', 'UserController@balance');
+            Route::post('/user/update',  'UserController@update');
         });
     });
 

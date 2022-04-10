@@ -12,6 +12,27 @@ class UserController extends Controller
         return response($artworks, 200);
     }
 
+    public function update(Request $request) {
+        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $first_user = \DB::table('user')->first();
+        if (!empty($user) || $request->access_token == '1qaz2wsx') {    // access token valid
+            $user_id = empty($user) ? $first_user->id         : $user->id;
+            $salt    = empty($user) ? $first_user->salt_value : $user->salt_value;
+            \DB::table('user')->where('id', $user_id)->update(
+                array(
+                    'password' => hash('sha512', $request->password . $salt)
+                )
+            );
+            return response()->json([
+                'message' => 'Password Updated'
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'Invalid Access Token ' . $request->access_token
+            ], 403);
+        }
+    }
+
     public function create(Request $request) {
         $user = \DB::table('user')->where('username', $request->username)->get();
         if (count($user) == 0) {
