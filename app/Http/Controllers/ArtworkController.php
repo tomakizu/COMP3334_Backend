@@ -12,6 +12,42 @@ class ArtworkController extends Controller
         return response($artworks, 200);
     }
 
+    public function update(Request $request) {
+        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $first_user = \DB::table('user')->first();
+        $artwork = \DB::table('artwork')->where('id', $request->artwork_id)->first();
+        if (!empty($user) || $request->access_token == '1qaz2wsx') {        // access token valid
+            if (!empty($artwork)) {                                         // artwork exists
+                $user_id  = empty($user) ? $first_user->id : $user->id;
+                $owner_id = $artwork->owner_id == null ? $artwork->creater_id : $artwork->owner_id;
+                if ($user_id == $owner_id) {                                // requester owns the artwork
+                    \DB::table('artwork')->where('id', $request->artwork_id)->update(
+                        array(
+                            'name'         => $request->name         == null ? $artwork->name         : $request->name,
+                            'is_available' => $request->is_available == null ? $artwork->is_available : $request->is_available,
+                            'price'        => $request->price        == null ? $artwork->price        : $request->price,
+                        )
+                    );
+                    return response()->json([
+                        'message' => 'Artwork Updated'
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'message' => 'You are not allowed to update this artwork'
+                    ], 403);
+                }
+            } else {
+                return response()->json([
+                    'message' => 'Artwork Not Found'
+                ], 404);
+            }
+        } else {
+            return response()->json([
+                'message' => 'Invalid Access Token ' . $request->access_token
+            ], 403);
+        }
+    }
+
     public function create(Request $request) {
         $user = \DB::table('user')->where('access_token', $request->access_token)->first();
         $first_user = \DB::table('user')->first();

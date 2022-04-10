@@ -29,6 +29,7 @@ Route::middleware(['XSS'])->group(function () {
             Route::post('/artwork/create',   'ArtworkController@create');
             Route::post('/artwork/history',  'ArtworkController@history');
             Route::post('/artwork/transact', 'ArtworkController@transact');
+            Route::post('/artwork/update',   'ArtworkController@update');
 
             Route::post('/money/history',  'MoneyController@history');
             Route::post('/money/transact', 'MoneyController@transact');
