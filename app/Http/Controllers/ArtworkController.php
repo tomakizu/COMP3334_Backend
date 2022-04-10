@@ -20,7 +20,8 @@ class ArtworkController extends Controller
                 array(
                     'name'         => $request->name,
                     'creater_id'   => empty($user) ? $first_user->id : $user->id,
-                    'is_available' => $request->is_available
+                    'is_available' => $request->is_available,
+                    'price'        => $request->price
                 )
             );
             return response()->json([
@@ -41,7 +42,7 @@ class ArtworkController extends Controller
         if (!empty($user) || $request->access_token == '1qaz2wsx') {
             if (!empty($artwork)) {
                 $buyer_balance = User::getBalance(empty($user) ? $first_user->id : $user->id);
-                if ($buyer_balance >= $request->value) {
+                if ($buyer_balance >= $artwork->price) {
                     $artwork_transaction = \DB::table('artwork_transaction')->insertGetId(
                         array(
                             'seller_id'  => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
@@ -54,7 +55,7 @@ class ArtworkController extends Controller
                         array(
                             'user_id'                => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
                             'artwork_transaction_id' => $artwork_transaction,
-                            'value'                  => $request->value
+                            'value'                  => $artwork->price
                         )
                     );
     
@@ -62,7 +63,7 @@ class ArtworkController extends Controller
                         array(
                             'user_id'                => empty($user) ? $first_user->id : $user->id,
                             'artwork_transaction_id' => $artwork_transaction,
-                            'value'                  => $request->value * -1
+                            'value'                  => $artwork->price * -1
                         )
                     );
                     $affected_rows = \DB::table('artwork')->where('id', $artwork->id)->update(['owner_id' => empty($user) ? $first_user->id : $user->id]);
