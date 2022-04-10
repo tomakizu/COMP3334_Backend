@@ -20,7 +20,8 @@ class ArtworkController extends Controller
                 array(
                     'name'         => $request->name,
                     'creater_id'   => empty($user) ? $first_user->id : $user->id,
-                    'is_available' => $request->is_available
+                    'is_available' => $request->is_available,
+                    'price'        => $request->price
                 )
             );
             return response()->json([
@@ -38,46 +39,53 @@ class ArtworkController extends Controller
         $user = \DB::table('user')->where('access_token', $request->access_token)->first();
         $artwork = \DB::table('artwork')->where('id', $request->artwork_id)->first();
         $first_user = \DB::table('user')->first();
-        if (!empty($user) || $request->access_token == '1qaz2wsx') {
-            if (!empty($artwork)) {
-                $buyer_balance = User::getBalance(empty($user) ? $first_user->id : $user->id);
-                if ($buyer_balance >= $request->value) {
-                    $artwork_transaction = \DB::table('artwork_transaction')->insertGetId(
-                        array(
-                            'seller_id'  => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
-                            'buyer_id'   => empty($user)               ? $first_user->id      : $user->id,
-                            'artwork_id' => $artwork->id
-                        )
-                    );
-    
-                    $seller_money_transaction = \DB::table('money_transaction')->insertGetId(
-                        array(
-                            'user_id'                => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
-                            'artwork_transaction_id' => $artwork_transaction,
-                            'value'                  => $request->value
-                        )
-                    );
-    
-                    $buyer_money_transaction = \DB::table('money_transaction')->insertGetId(
-                        array(
-                            'user_id'                => empty($user) ? $first_user->id : $user->id,
-                            'artwork_transaction_id' => $artwork_transaction,
-                            'value'                  => $request->value * -1
-                        )
-                    );
-                    $affected_rows = \DB::table('artwork')->where('id', $artwork->id)->update(['owner_id' => empty($user) ? $first_user->id : $user->id]);
-                    if ($affected_rows == 1) {
+        if (!empty($user) || $request->access_token == '1qaz2wsx') {    // access token is valid
+        if (!empty($artwork)) {                                         // artwork exists
+                $user_id = empty($user) ? $first_user->id : $user->id;
+                if ($artwork->owner_id != $user_id) {                  // the buyer does not buy self-owned artwork
+                    $buyer_balance = User::getBalance(empty($user) ? $first_user->id : $user->id);
+                    if ($buyer_balance >= $artwork->price) {            // buyer has enough money
+                        $artwork_transaction = \DB::table('artwork_transaction')->insertGetId(
+                            array(
+                                'seller_id'  => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
+                                'buyer_id'   => empty($user)               ? $first_user->id      : $user->id,
+                                'artwork_id' => $artwork->id
+                            )
+                        );
+        
+                        $seller_money_transaction = \DB::table('money_transaction')->insertGetId(
+                            array(
+                                'user_id'                => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
+                                'artwork_transaction_id' => $artwork_transaction,
+                                'value'                  => $artwork->price
+                            )
+                        );
+        
+                        $buyer_money_transaction = \DB::table('money_transaction')->insertGetId(
+                            array(
+                                'user_id'                => empty($user) ? $first_user->id : $user->id,
+                                'artwork_transaction_id' => $artwork_transaction,
+                                'value'                  => $artwork->price * -1
+                            )
+                        );
+                        $affected_rows = \DB::table('artwork')->where('id', $artwork->id)->update(['owner_id' => empty($user) ? $first_user->id : $user->id]);
+                        if ($affected_rows == 1) {
+                            return response()->json([
+                                'message'                     => 'Transaction success',
+                                'artwork_transaction_id'      => $artwork_transaction,
+                                'seller_money_transaction_id' => $seller_money_transaction,
+                                'buyer_money_transaction_id'  => $buyer_money_transaction
+                            ], 200);    
+                        }
+                    } else {
                         return response()->json([
-                            'message'                     => 'Transaction success',
-                            'artwork_transaction_id'      => $artwork_transaction,
-                            'seller_money_transaction_id' => $seller_money_transaction,
-                            'buyer_money_transaction_id'  => $buyer_money_transaction
-                        ], 200);    
+                            'message' => 'Insufficient balance for transaction'
+                        ], 409);    
                     }
                 } else {
                     return response()->json([
-                        'message' => 'Insufficient balance for transaction'
-                    ], 409);    
+                        'message' => 'You cannot buy your own artwork'
+                    ], 409);
                 }
             } else {
                 return response()->json([
