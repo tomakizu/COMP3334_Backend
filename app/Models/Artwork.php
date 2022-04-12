@@ -67,7 +67,6 @@ class Artwork extends Model
                 'price'        => $price        == null ? $artwork->price        : $price,
             )
         );
-
     }
 
     public static function updateArtworkOwner($artwork_id, $owner_id) {
