@@ -21,8 +21,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['XSS'])->group(function () {
     /** requires client credential validation, must use post under the group */
     Route::middleware(['validate_client'])->group(function () {
-        Route::post('/user/create', 'UserController@create');
-        Route::post('/user/login',  'UserController@login');
+        Route::post('/user/create',  'UserController@create');
+        Route::post('/user/details', 'UserController@details');
+        Route::post('/user/login',   'UserController@login');
 
         /** requires access token validation, must use post under the group */
         Route::middleware(['verify_user'])->group(function () {

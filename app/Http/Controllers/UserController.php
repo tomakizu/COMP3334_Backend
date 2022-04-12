@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Artwork;
+use App\Models\ArtworkTransaction;
+use App\Models\MoneyTransaction;
 use App\Models\User;
 
 class UserController extends Controller
@@ -10,6 +13,24 @@ class UserController extends Controller
     public function list() {
         $artworks = \DB::table('user')->select('username', 'register_datetime')->get()->toJson(JSON_PRETTY_PRINT);
         return response($artworks, 200);
+    }
+
+    public function details(Request $request) {
+        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        if (!empty($user)) {
+            return response()->json([
+                'username' => $user->username,
+                'balance'  => User::getBalance($user->id),
+                'created_artwork' =>  Artwork::getCreatedArtworks($user->id),
+                'owned_artwork' =>  Artwork::getOwnedArtworks($user->id),
+                'artwork_transaction_history' => ArtworkTransaction::getHistory($user->id),
+                'money_transaction' => MoneyTransaction::getHistory($user->id)
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'Invalid Access Token ' . $request->access_token
+            ], 403);
+        }
     }
 
     public function update(Request $request) {

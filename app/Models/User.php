@@ -12,6 +12,10 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    public static function getUsername($user_id) {
+        return \DB::table('user')->where('id', $user_id)->value('username');
+    }
+
     public static function getBalance($id) {
         $balance = 0.0;
         $transactions = \DB::table('money_transaction')->where('user_id', $id)->get();
