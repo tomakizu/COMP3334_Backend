@@ -27,11 +27,10 @@ class ArtworkController extends Controller
 
     public function update(Request $request) {
         $user = \DB::table('user')->where('access_token', $request->access_token)->first();
-        $first_user = \DB::table('user')->first();
         $artwork = \DB::table('artwork')->where('id', $request->artwork_id)->first();
-        if (!empty($user) || $request->access_token == '1qaz2wsx') {        // access token valid
-            if (!empty($artwork)) {                                         // artwork exists
-                $user_id  = empty($user) ? $first_user->id : $user->id;
+        if (!empty($user)) {            // access token valid
+            if (!empty($artwork)) {     // artwork exists
+                $user_id  = $user->id;
                 $owner_id = $artwork->owner_id == null ? $artwork->creater_id : $artwork->owner_id;
                 if ($user_id == $owner_id) {                                // requester owns the artwork
                     \DB::table('artwork')->where('id', $request->artwork_id)->update(
@@ -63,12 +62,11 @@ class ArtworkController extends Controller
 
     public function create(Request $request) {
         $user = \DB::table('user')->where('access_token', $request->access_token)->first();
-        $first_user = \DB::table('user')->first();
-        if (!empty($user) || $request->access_token == '1qaz2wsx') {
+        if (!empty($user)) {
             $new_artwork = \DB::table('artwork')->insertGetId(
                 array(
                     'name'         => $request->name,
-                    'creater_id'   => empty($user) ? $first_user->id : $user->id,
+                    'creater_id'   => $user->id,
                     'is_available' => $request->is_available,
                     'price'        => $request->price
                 )
@@ -87,17 +85,15 @@ class ArtworkController extends Controller
     public function transact(Request $request) {
         $user = \DB::table('user')->where('access_token', $request->access_token)->first();
         $artwork = \DB::table('artwork')->where('id', $request->artwork_id)->first();
-        $first_user = \DB::table('user')->first();
-        if (!empty($user) || $request->access_token == '1qaz2wsx') {    // access token is valid
-        if (!empty($artwork)) {                                         // artwork exists
-                $user_id = empty($user) ? $first_user->id : $user->id;
-                if ($artwork->owner_id != $user_id) {                  // the buyer does not buy self-owned artwork
-                    $buyer_balance = User::getBalance(empty($user) ? $first_user->id : $user->id);
-                    if ($buyer_balance >= $artwork->price) {            // buyer has enough money
+        if (!empty($user)) {                                    // access token is valid
+            if (!empty($artwork)) {                             // artwork exists
+                if ($artwork->owner_id != $user->id) {          // the buyer does not buy self-owned artwork
+                    $buyer_balance = User::getBalance($user->id);
+                    if ($buyer_balance >= $artwork->price) {    // buyer has enough money
                         $artwork_transaction = \DB::table('artwork_transaction')->insertGetId(
                             array(
                                 'seller_id'  => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
-                                'buyer_id'   => empty($user)               ? $first_user->id      : $user->id,
+                                'buyer_id'   => $user->id,
                                 'artwork_id' => $artwork->id
                             )
                         );
@@ -112,12 +108,12 @@ class ArtworkController extends Controller
         
                         $buyer_money_transaction = \DB::table('money_transaction')->insertGetId(
                             array(
-                                'user_id'                => empty($user) ? $first_user->id : $user->id,
+                                'user_id'                => $user->id,
                                 'artwork_transaction_id' => $artwork_transaction,
                                 'value'                  => $artwork->price * -1
                             )
                         );
-                        $affected_rows = \DB::table('artwork')->where('id', $artwork->id)->update(['owner_id' => empty($user) ? $first_user->id : $user->id]);
+                        $affected_rows = \DB::table('artwork')->where('id', $artwork->id)->update(['owner_id' => $user->id]);
                         if ($affected_rows == 1) {
                             return response()->json([
                                 'message'                     => 'Transaction success',
@@ -150,11 +146,10 @@ class ArtworkController extends Controller
 
     public function history(Request $request) {
         $user = \DB::table('user')->where('access_token', $request->access_token)->first();
-        $first_user = \DB::table('user')->first();
-        if (!empty($user) || $request->access_token == '1qaz2wsx') {
+        if (!empty($user)) {
             $artwork_transactions = \DB::table('artwork_transaction')
-                ->where('seller_id', empty($user) ? $first_user->id : $user->id)
-                ->orWhere('buyer_id', empty($user) ? $first_user->id : $user->id)
+                ->where('seller_id',  $user->id)
+                ->orWhere('buyer_id', $user->id)
                 ->get();
             return response()->json($artwork_transactions, 200);
         } else {
