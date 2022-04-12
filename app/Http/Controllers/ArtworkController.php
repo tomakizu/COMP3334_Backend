@@ -7,9 +7,22 @@ use App\Models\User;
 
 class ArtworkController extends Controller
 {
-    public function list() {
-        $artworks = \DB::table('artwork')->get()->toJson(JSON_PRETTY_PRINT);
-        return response($artworks, 200);
+    public function list(Request $request) {
+        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        if (!empty($user)) {
+            $artworks = \DB::table('artwork')->where('is_available', 1)->where(
+                \DB::raw('CASE WHEN owner_id IS NULL THEN creater_id ELSE owner_id END'), '<>', $user->id
+            )->get();
+            foreach ($artworks as $artwork) {
+                $artwork->owner_username   = User::getUsername($artwork->owner_id);
+                $artwork->creater_username = User::getUsername($artwork->creater_id);
+            }
+            return response(json_encode($artworks), 200);
+        } else {
+            return response()->json([
+                'message' => 'Invalid Access Token ' . $request->access_token
+            ], 403);
+        }
     }
 
     public function update(Request $request) {

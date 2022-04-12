@@ -27,6 +27,7 @@ Route::middleware(['XSS'])->group(function () {
 
         /** requires access token validation, must use post under the group */
         Route::middleware(['verify_user'])->group(function () {
+            Route::post('/artwork',          'ArtworkController@list');
             Route::post('/artwork/create',   'ArtworkController@create');
             Route::post('/artwork/history',  'ArtworkController@history');
             Route::post('/artwork/transact', 'ArtworkController@transact');
@@ -44,6 +45,5 @@ Route::middleware(['XSS'])->group(function () {
     Route::get('/test/404', 'TestingController@test404');
     Route::get('/test/500', 'TestingController@test500');
 
-    Route::get('/artwork', 'ArtworkController@list');
     Route::get('/user', 'UserController@list');
 });
