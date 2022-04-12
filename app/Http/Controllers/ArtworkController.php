@@ -74,7 +74,11 @@ class ArtworkController extends Controller
                     if ($artwork->owner_id != $user->id) {          // the buyer does not buy self-owned artwork
                         $buyer_balance = User::getBalance($user->id);
                         if ($buyer_balance >= $artwork->price) {    // buyer has enough money
-                            $artwork_transaction_id = ArtworkTransaction::addRecord($artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id, $user->id, $artwork->id);
+                            $artwork_transaction_id = ArtworkTransaction::addRecord(
+                                $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id, 
+                                $user->id, 
+                                $artwork->id
+                            );
 
                             $seller_money_transaction_id = MoneyTransaction::addRecord(
                                 $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
