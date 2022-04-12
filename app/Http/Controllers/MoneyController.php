@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\MoneyTransaction;
 use App\Models\User;
 
 class MoneyController extends Controller
@@ -15,15 +16,10 @@ class MoneyController extends Controller
                     'message' => 'Insufficient balance for transaction'
                 ], 409);    
             } else {
-                $money_transaction = \DB::table('money_transaction')->insertGetId(
-                    array(
-                        'user_id' => $user->id,
-                        'value'   => $request->value
-                    )
-                );
+                $money_transaction_id = MoneyTransaction::addRecord($user->id, $request->value);
                 return response()->json([
                     'message'        => 'Transaction success',
-                    'transaction_id' => $money_transaction
+                    'transaction_id' => $money_transaction_id
                 ], 200);    
             }
         } else {
@@ -36,8 +32,7 @@ class MoneyController extends Controller
     public function history(Request $request) {
         $user = \DB::table('user')->where('access_token', $request->access_token)->first();
         if (!empty($user)) {
-            $transactions = \DB::table('money_transaction')->where('user_id', $user->id)->get()->toJson(JSON_PRETTY_PRINT);
-            return response($transactions, 200);
+            return response(json_encode(MoneyTransaction::getHistory($user->id)), 200);
         } else {
             return response()->json([
                 'message' => 'Invalid Access Token ' . $request->access_token
