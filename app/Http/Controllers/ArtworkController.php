@@ -3,21 +3,17 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Artwork;
+use App\Models\ArtworkTransaction;
+use App\Models\MoneyTransaction;
 use App\Models\User;
 
 class ArtworkController extends Controller
 {
     public function list(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $user = User::getUserByAccessToken($request->access_token);
         if (!empty($user)) {
-            $artworks = \DB::table('artwork')->where('is_available', 1)->where(
-                \DB::raw('CASE WHEN owner_id IS NULL THEN creater_id ELSE owner_id END'), '<>', $user->id
-            )->get();
-            foreach ($artworks as $artwork) {
-                $artwork->owner_username   = User::getUsername($artwork->owner_id);
-                $artwork->creater_username = User::getUsername($artwork->creater_id);
-            }
-            return response(json_encode($artworks), 200);
+            return response(json_encode(Artwork::getAvailableArtworks($user->id)), 200);
         } else {
             return response()->json([
                 'message' => 'Invalid Access Token ' . $request->access_token
@@ -26,20 +22,14 @@ class ArtworkController extends Controller
     }
 
     public function update(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
-        $artwork = \DB::table('artwork')->where('id', $request->artwork_id)->first();
+        $user = User::getUserByAccessToken($request->access_token);
+        $artwork = Artwork::getArtworkById($request->artwork_id);
         if (!empty($user)) {            // access token valid
             if (!empty($artwork)) {     // artwork exists
                 $user_id  = $user->id;
                 $owner_id = $artwork->owner_id == null ? $artwork->creater_id : $artwork->owner_id;
                 if ($user_id == $owner_id) {                                // requester owns the artwork
-                    \DB::table('artwork')->where('id', $request->artwork_id)->update(
-                        array(
-                            'name'         => $request->name         == null ? $artwork->name         : $request->name,
-                            'is_available' => $request->is_available == null ? $artwork->is_available : $request->is_available,
-                            'price'        => $request->price        == null ? $artwork->price        : $request->price,
-                        )
-                    );
+                    Artwork::updateArtworkInfo($request->artwork_id, $request->name, $request->is_available, $request->price);
                     return response()->json([
                         'message' => 'Artwork Updated'
                     ], 200);
@@ -61,19 +51,12 @@ class ArtworkController extends Controller
     }
 
     public function create(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $user = User::getUserByAccessToken($request->access_token);
         if (!empty($user)) {
-            $new_artwork = \DB::table('artwork')->insertGetId(
-                array(
-                    'name'         => $request->name,
-                    'creater_id'   => $user->id,
-                    'is_available' => $request->is_available,
-                    'price'        => $request->price
-                )
-            );
+            $new_artwork_id = Artwork::addRecord($request->name, $user->id, $request->is_available, $request->price);
             return response()->json([
                 'message'    => 'Artwork Created',
-                'artwork_id' => $new_artwork
+                'artwork_id' => $new_artwork_id
             ], 201);
         } else {
             return response()->json([
@@ -83,45 +66,31 @@ class ArtworkController extends Controller
     }
 
     public function transact(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
-        $artwork = \DB::table('artwork')->where('id', $request->artwork_id)->first();
+        $user = User::getUserByAccessToken($request->access_token);
+        $artwork = Artwork::getArtworkById($request->artwork_id);
         if (!empty($user)) {                                    // access token is valid
             if (!empty($artwork)) {                             // artwork exists
                 if ($artwork->owner_id != $user->id) {          // the buyer does not buy self-owned artwork
                     $buyer_balance = User::getBalance($user->id);
                     if ($buyer_balance >= $artwork->price) {    // buyer has enough money
-                        $artwork_transaction = \DB::table('artwork_transaction')->insertGetId(
-                            array(
-                                'seller_id'  => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
-                                'buyer_id'   => $user->id,
-                                'artwork_id' => $artwork->id
-                            )
-                        );
+                        $artwork_transaction_id = ArtworkTransaction::addRecord($artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id, $user->id, $artwork->id);
         
-                        $seller_money_transaction = \DB::table('money_transaction')->insertGetId(
-                            array(
-                                'user_id'                => $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
-                                'artwork_transaction_id' => $artwork_transaction,
-                                'value'                  => $artwork->price
-                            )
+                        $seller_money_transaction_id = MoneyTransaction::addRecord(
+                            $artwork->owner_id == NULL ? $artwork->creater_id : $artwork->owner_id,
+                            $artwork->price,
+                            $artwork_transaction_id
                         );
-        
-                        $buyer_money_transaction = \DB::table('money_transaction')->insertGetId(
-                            array(
-                                'user_id'                => $user->id,
-                                'artwork_transaction_id' => $artwork_transaction,
-                                'value'                  => $artwork->price * -1
-                            )
-                        );
-                        $affected_rows = \DB::table('artwork')->where('id', $artwork->id)->update(['owner_id' => $user->id]);
-                        if ($affected_rows == 1) {
-                            return response()->json([
-                                'message'                     => 'Transaction success',
-                                'artwork_transaction_id'      => $artwork_transaction,
-                                'seller_money_transaction_id' => $seller_money_transaction,
-                                'buyer_money_transaction_id'  => $buyer_money_transaction
-                            ], 200);    
-                        }
+
+                        $buyer_money_transaction_id = MoneyTransaction::addRecord($user->id, $artwork->price * -1, $artwork_transaction_id);
+
+                        Artwork::updateArtworkOwner($artwork->id, $user->id);
+
+                        return response()->json([
+                            'message'                     => 'Transaction success',
+                            'artwork_transaction_id'      => $artwork_transaction_id,
+                            'seller_money_transaction_id' => $seller_money_transaction_id,
+                            'buyer_money_transaction_id'  => $buyer_money_transaction_id
+                        ], 200);
                     } else {
                         return response()->json([
                             'message' => 'Insufficient balance for transaction'
@@ -145,13 +114,9 @@ class ArtworkController extends Controller
     }
 
     public function history(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $user = User::getUserByAccessToken($request->access_token);
         if (!empty($user)) {
-            $artwork_transactions = \DB::table('artwork_transaction')
-                ->where('seller_id',  $user->id)
-                ->orWhere('buyer_id', $user->id)
-                ->get();
-            return response()->json($artwork_transactions, 200);
+            return response()->json(ArtworkTransaction::getTransactionHistory($user->id), 200);
         } else {
             return response()->json([
                 'message' => 'Invalid Access Token ' . $request->access_token

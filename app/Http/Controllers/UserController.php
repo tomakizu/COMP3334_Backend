@@ -11,20 +11,19 @@ use App\Models\User;
 class UserController extends Controller
 {
     public function list() {
-        $artworks = \DB::table('user')->select('username', 'register_datetime')->get()->toJson(JSON_PRETTY_PRINT);
-        return response($artworks, 200);
+        return response(json_encode(User::getAllUser()), 200);
     }
 
     public function details(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $user = User::getUserByAccessToken($request->access_token);
         if (!empty($user)) {
             return response()->json([
-                'username' => $user->username,
-                'balance'  => User::getBalance($user->id),
-                'created_artwork' =>  Artwork::getCreatedArtworks($user->id),
-                'owned_artwork' =>  Artwork::getOwnedArtworks($user->id),
-                'artwork_transaction_history' => ArtworkTransaction::getHistory($user->id),
-                'money_transaction' => MoneyTransaction::getHistory($user->id)
+                'username'                    => $user->username,
+                'balance'                     => User::getBalance($user->id),
+                'created_artwork'             => Artwork::getCreatedArtworks($user->id),
+                'owned_artwork'               => Artwork::getOwnedArtworks($user->id),
+                'artwork_transaction_history' => ArtworkTransaction::getTransactionHistory($user->id),
+                'money_transaction'           => MoneyTransaction::getTransactionHistory($user->id)
             ], 200);
         } else {
             return response()->json([
@@ -34,13 +33,9 @@ class UserController extends Controller
     }
 
     public function update(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $user = User::getUserByAccessToken($request->access_token);
         if (!empty($user)) {    // access token valid
-            \DB::table('user')->where('id', $user->id)->update(
-                array(
-                    'password' => hash('sha512', $request->password . $user->salt_value)
-                )
-            );
+            User::updatePassword($user->id, $request->password);
             return response()->json([
                 'message' => 'Password Updated'
             ], 200);
@@ -52,19 +47,11 @@ class UserController extends Controller
     }
 
     public function create(Request $request) {
-        $user = \DB::table('user')->where('username', $request->username)->get();
-        if (count($user) == 0) {
-            $salt = rand(100000000, 999999999); // 9 digits
-            $new_user = \DB::table('user')->insertGetId(
-                array(
-                    'username'   => $request->username,
-                    'password'   => hash('sha512', $request->password . $salt),
-                    'salt_value' => $salt
-                )
-            );
+        if (User::verifyUsername($request->username)) {
+            $new_user_id = User::addRecord($request->username, $request->password);
             return response()->json([
                 'message' => 'User Created',
-                'user_id' => $new_user
+                'user_id' => $new_user_id
             ], 201);
         } else {
             return response()->json([
@@ -74,24 +61,12 @@ class UserController extends Controller
     }
 
     public function login(Request $request) {
-        $user = \DB::table('user')->where('username', $request->username)->first();
-        if (!empty($user)) {
-            $salted_password = hash('sha512', $request->password . $user->salt_value);
-            if ($salted_password == $user->password) {
-                $access_token = hash('sha512', $request->username . date('YmdHis'));
-                $affected_rows = \DB::table('user')->where('id', $user->id)->update(['access_token' => $access_token]);
-                if ($affected_rows == 1) {
-                    return response()->json([
-                        'message' => 'Success',
-                        'access_token' => $access_token
-                    ], 200);    
-                }
-            } else {
-                return response()->json([
-                    'message' => 'invalid user credentials'
-                ], 404);    
-            }
-
+        if (User::verifyLogin($request->username, $request->password)) {
+        $access_token = User::generateAccessToken($request->username);
+        return response()->json([
+            'message' => 'Success',
+            'access_token' => $access_token
+        ], 200);    
         } else {
             return response()->json([
                 'message' => 'invalid user credentials'
@@ -100,7 +75,7 @@ class UserController extends Controller
     }
 
     public function balance(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $user = User::getUserByAccessToken($request->access_token);
         if (!empty($user)) {
             $balance = User::getBalance($user->id);
             return response()->json([

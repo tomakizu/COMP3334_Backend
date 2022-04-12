@@ -9,7 +9,7 @@ use App\Models\User;
 class MoneyController extends Controller
 {
     public function transact(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $user = User::getUserByAccessToken($request->access_token);
         if (!empty($user)) {
             if ($request->value < 0 && User::getBalance($user->id) + $request->value < 0) {
                 return response()->json([
@@ -30,9 +30,9 @@ class MoneyController extends Controller
     }
 
     public function history(Request $request) {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
+        $user = User::getUserByAccessToken($request->access_token);
         if (!empty($user)) {
-            return response(json_encode(MoneyTransaction::getHistory($user->id)), 200);
+            return response(json_encode(MoneyTransaction::getTransactionHistory($user->id)), 200);
         } else {
             return response()->json([
                 'message' => 'Invalid Access Token ' . $request->access_token
