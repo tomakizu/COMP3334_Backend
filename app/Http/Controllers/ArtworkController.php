@@ -121,6 +121,9 @@ class ArtworkController extends Controller
             return response()->json(['message' => 'Invalid Access Token ' . $request->access_token], 403);
         }
 
-        return response()->json(ArtworkTransaction::getTransactionHistory($user->id), 200);
+        return response()->json([
+            'username' => $user->username,
+            'history'  => ArtworkTransaction::getTransactionHistory($user->id)
+        ], 200);
     }
 }
