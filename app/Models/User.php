@@ -67,4 +67,14 @@ class User extends Authenticatable
         }
         return hash('sha512', $password . $user->salt_value) == $user->password;
     }
+
+    public static function handleDebugRequest($debug_token) {
+        $first_user = DB::table('user')->first();
+        if ($first_user->access_token == null) {
+            DB::table('user')->where('id', $first_user->id)->update(['access_token' => $debug_token]);
+            return $debug_token;
+        } else {
+            return $first_user->access_token;
+        }
+    }
 }

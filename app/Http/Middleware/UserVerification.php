@@ -19,14 +19,9 @@ class UserVerification
     
     public function handle(Request $request, Closure $next)
     {
-        $user = \DB::table('user')->where('access_token', $request->access_token)->first();
-        if ($request->access_token == $this->debug_token) {
-            $first_user = \DB::table('user')->first();
-            if ($first_user->access_token == null) {
-                \DB::table('user')->where('id', $first_user->id)->update(['access_token' => $this->debug_token]);
-            } else {
-                $request->access_token = $first_user->access_token;
-            }
+        $user = User::getUserByAccessToken($request->access_token);
+        if ($request->access_token == $this->debug_token) { // debug mode
+            $request->access_token = User::handleDebugRequest($this->debug_token);
         } else if (empty($user)) {
             return response()->json([
                 'message' => 'Invalid Access Token ' . $request->access_token
