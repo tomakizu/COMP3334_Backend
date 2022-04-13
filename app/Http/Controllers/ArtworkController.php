@@ -53,6 +53,11 @@ class ArtworkController extends Controller
             return response()->json(['message' => 'Invalid Access Token ' . $request->access_token], 403);
         }
 
+        // return error if price is negative
+        if ($request->price < 0) {
+            return response()->json(['message' => 'Price cannot be negative'], 400);
+        }
+
         $new_artwork_id = Artwork::addRecord($request->name, $user->id, $request->is_available, $request->price);
 
         return response()->json(['message' => 'Artwork Created','artwork_id' => $new_artwork_id], 201);
