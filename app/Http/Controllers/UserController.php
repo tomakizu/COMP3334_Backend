@@ -23,6 +23,7 @@ class UserController extends Controller
         }
 
         return response()->json([
+            'user_id'                     => $user->id,
             'username'                    => $user->username,
             'balance'                     => User::getBalance($user->id),
             'created_artwork'             => Artwork::getCreatedArtworks($user->id),
