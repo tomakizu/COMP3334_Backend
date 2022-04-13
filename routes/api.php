@@ -22,11 +22,11 @@ Route::middleware(['XSS'])->group(function () {
     /** requires client credential validation, must use post under the group */
     Route::middleware(['validate_client'])->group(function () {
         Route::post('/user/create',  'UserController@create');
-        Route::post('/user/details', 'UserController@details');
         Route::post('/user/login',   'UserController@login');
 
         /** requires access token validation, must use post under the group */
         Route::middleware(['verify_user'])->group(function () {
+            
             Route::post('/artwork',          'ArtworkController@list');
             Route::post('/artwork/create',   'ArtworkController@create');
             Route::post('/artwork/history',  'ArtworkController@history');
@@ -37,6 +37,7 @@ Route::middleware(['XSS'])->group(function () {
             Route::post('/money/transact', 'MoneyController@transact');
 
             Route::post('/user/balance', 'UserController@balance');
+            Route::post('/user/details', 'UserController@details');
             Route::post('/user/update',  'UserController@update');
         });
     });
