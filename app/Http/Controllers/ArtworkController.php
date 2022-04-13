@@ -41,6 +41,13 @@ class ArtworkController extends Controller
             return response()->json(['message' => 'You are not allowed to update this artwork'], 403);
         }
 
+        // return error if the price is negative 
+        if (!is_null($request->price)) {
+            if ($request->price < 0) {
+                return response()->json(['message' => 'Price cannot be negative'], 400);
+            }
+        }
+
         Artwork::updateArtworkInfo($request->artwork_id, $request->name, $request->is_available, $request->price);
         return response()->json(['message' => 'Artwork Updated'], 200);
     }
