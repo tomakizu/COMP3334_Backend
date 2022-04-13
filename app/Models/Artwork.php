@@ -47,14 +47,15 @@ class Artwork extends Model
         return $artworks;
     }
 
-    public static function addRecord($artwork_name, $creater_id, $is_available, $price) {
+    public static function addRecord($artwork_name, $creater_id, $is_available, $price, $filename) {
         return DB::table('artwork')->insertGetId(
             array(
                 'name'         => $artwork_name,
                 'creater_id'   => $creater_id,
                 'owner_id'     => $creater_id,
                 'is_available' => $is_available,
-                'price'        => $price
+                'price'        => $price,
+                'filename'     => $filename
             )
         );
     }
