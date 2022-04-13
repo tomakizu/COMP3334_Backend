@@ -59,7 +59,7 @@ class Artwork extends Model
         );
     }
 
-    public static function updateArtworkInfo($artwork_id, $artwork_name, $is_available, $price) {
+    public static function updateArtworkInfo($artwork_id, $artwork_name, $is_available, $price, $filename = null) {
         $artwork = static::getArtworkById($artwork_id);
 
         $update_array = array();
@@ -79,6 +79,10 @@ class Artwork extends Model
 
         if (!is_null($price)) {
             $update_array['price'] = $price;
+        }
+
+        if (!is_null($filename)) {
+            $update_array['filename'] = $filename;
         }
         
         return DB::table('artwork')->where('id', $artwork_id)->update($update_array);

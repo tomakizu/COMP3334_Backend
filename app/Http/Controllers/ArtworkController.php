@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use App\Models\Artwork;
 use App\Models\ArtworkTransaction;
 use App\Models\MoneyTransaction;
@@ -65,7 +66,20 @@ class ArtworkController extends Controller
             return response()->json(['message' => 'Price cannot be negative'], 400);
         }
 
+        // return error if the file is not an image
+        $validator = Validator::make($request->all(), ['file' => 'required|mimes:png,jpg,jpeg,gif|max:2048']);
+        if ($validator->fails()) {
+            return response()->json(['message' => 'File is not an image'], 401);
+        }
+
         $new_artwork_id = Artwork::addRecord($request->name, $user->id, $request->is_available, $request->price);
+
+        // save artwork to storage
+        if ($file = $request->file('file')) {
+            $name = hash('sha512', $new_artwork_id . date('YmdHis')) . '.' . $file->getClientOriginalExtension();
+            $file->move(storage_path('/app/public/images'), $name);
+            Artwork::updateArtworkInfo($new_artwork_id, null, null, null, $name);
+        }
 
         return response()->json(['message' => 'Artwork Created','artwork_id' => $new_artwork_id], 201);
     }
