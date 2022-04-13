@@ -61,13 +61,27 @@ class Artwork extends Model
 
     public static function updateArtworkInfo($artwork_id, $artwork_name, $is_available, $price) {
         $artwork = static::getArtworkById($artwork_id);
-        return DB::table('artwork')->where('id', $artwork_id)->update(
-            array(
-                'name'         => $artwork_name == null ? $artwork->name         : $artwork_name,
-                'is_available' => $is_available == null ? $artwork->is_available : $is_available,
-                'price'        => $price        == null ? $artwork->price        : $price,
-            )
-        );
+
+        $update_array = array();
+
+        // return error if artwork is empty
+        if (empty($artwork)) {
+            return response()->json(['message' => 'Artwork ' . $artwork_id . ' not found'], 404);
+        }
+
+        if (!is_null($artwork_name)) {
+            $update_array['name'] = $artwork_name;
+        }
+
+        if (!is_null($is_available)) {
+            $update_array['is_available'] = $is_available;
+        }
+
+        if (!is_null($price)) {
+            $update_array['price'] = $price;
+        }
+        
+        return DB::table('artwork')->where('id', $artwork_id)->update($update_array);
     }
 
     public static function updateArtworkOwner($artwork_id, $owner_id) {

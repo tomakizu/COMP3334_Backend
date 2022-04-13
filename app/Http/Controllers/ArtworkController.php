@@ -103,7 +103,7 @@ class ArtworkController extends Controller
         $buyer_money_transaction_id = MoneyTransaction::addRecord($user->id, $artwork->price * -1, $artwork_transaction_id);
 
         Artwork::updateArtworkOwner($artwork->id, $user->id);
-        Artwork::updateArtworkInfo($artwork->id, $artwork->name, 0, $artwork->price);
+        $row = Artwork::updateArtworkInfo($artwork->id, null, 0, null);
 
         return response()->json([
             'message'                     => 'Transaction success',
