@@ -52,6 +52,7 @@ class Artwork extends Model
             array(
                 'name'         => $artwork_name,
                 'creater_id'   => $creater_id,
+                'owner_id'     => $creater_id,
                 'is_available' => $is_available,
                 'price'        => $price
             )
