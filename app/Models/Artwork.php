@@ -92,4 +92,10 @@ class Artwork extends Model
     public static function updateArtworkOwner($artwork_id, $owner_id) {
         return DB::table('artwork')->where('id', $artwork_id)->update(['owner_id' => $owner_id]);
     }
+
+    public static function truncate() {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('artwork')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+    }
 }

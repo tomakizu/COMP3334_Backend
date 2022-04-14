@@ -23,4 +23,10 @@ class MoneyTransaction extends Model
             )
         );
     }
+
+    public static function truncate() {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('money_transaction')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+    }
 }

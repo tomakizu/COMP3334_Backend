@@ -28,4 +28,10 @@ class ArtworkTransaction extends Model
             )
         );
     }
+
+    public static function truncate() {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('artwork_transaction')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+    }
 }

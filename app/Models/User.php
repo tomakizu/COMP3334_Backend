@@ -77,4 +77,10 @@ class User extends Authenticatable
             return $first_user->access_token;
         }
     }
+
+    public static function truncate() {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('user')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+    }
 }

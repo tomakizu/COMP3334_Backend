@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Artwork;
+use App\Models\ArtworkTransaction;
+use App\Models\MoneyTransaction;
+use App\Models\User;
 
 class TestingController extends Controller
 {
@@ -22,5 +26,12 @@ class TestingController extends Controller
         return response()->json([
             'message' => 'response: 500'
         ], 500);
+    }
+
+    public function truncateDatabase() {
+        MoneyTransaction::truncate();
+        ArtworkTransaction::truncate();
+        Artwork::truncate();
+        User::truncate();
     }
 }

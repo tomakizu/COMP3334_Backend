@@ -23,6 +23,7 @@ Route::middleware(['XSS'])->group(function () {
     Route::middleware(['validate_client'])->group(function () {
         Route::post('/user/create',  'UserController@create');
         Route::post('/user/login',   'UserController@login');
+        Route::post('/debug/truncate', 'TestingController@truncateDatabase');
 
         /** requires access token validation, must use post under the group */
         Route::middleware(['verify_user'])->group(function () {
