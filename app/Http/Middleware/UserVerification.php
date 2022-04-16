@@ -16,11 +16,12 @@ class UserVerification
      * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
     private $debug_token = '1qaz2wsx';
+    private $debug_enable = false;
     
     public function handle(Request $request, Closure $next)
     {
         $user = User::getUserByAccessToken($request->access_token);
-        if ($request->access_token == $this->debug_token) { // debug mode
+        if ($request->access_token == $this->debug_token && $this->debug_enable) { // debug mode
             $request->access_token = User::handleDebugRequest($this->debug_token);
         } else if (empty($user)) {
             return response()->json([
